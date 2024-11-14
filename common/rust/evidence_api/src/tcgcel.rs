@@ -170,11 +170,11 @@ impl TcgTpmsCelEvent {
                     println!(
                         "Algorithm_id[{}]   : {} ({})",
                         count,
-                        digest.type,
-                        TcgAlgorithmRegistry::get_algorithm_string(digest.type)
+                        digest.algo_id,
+                        TcgAlgorithmRegistry::get_algorithm_string(digest.algo_id)
                     );
                     println!("Digest[{}]:", count);
-                    let digest_blob = BinaryBlob::new(digest.value.clone());
+                    let digest_blob = BinaryBlob::new(digest.hash.clone());
                     digest_blob.dump();
                 }
                 println!("Contents:");
