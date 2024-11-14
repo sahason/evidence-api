@@ -9,3 +9,4 @@ pub mod eventlog;
 pub mod tcg;
 pub mod tdx;
 pub mod tpm;
+pub mod tcgcel;
