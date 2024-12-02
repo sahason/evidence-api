@@ -6,7 +6,7 @@ use log::error;
 use std::collections::HashMap;
 use std::any::Any;
 
-struct TcgTpmsCelEvent {
+pub struct TcgTpmsCelEvent {
     rec_num: i32,
     digests: Vec<TcgDigest>,
     content_type: Option<i32>,
