@@ -24,6 +24,13 @@ use sha2::{Digest, Sha256, Sha384, Sha512};
        event: raw event information
        extra_info: extra information in the event
 */
+
+pub const TCG_FORMAT_PCCLIENT: u32 = 0;
+pub const TCG_FORMAT_CEL: u32 = 1;
+pub const TCG_FORMAT_CEL_TLV: u32 = 2;
+pub const TCG_FORMAT_CEL_JSON: u32 = 3;
+pub const TCG_FORMAT_CEL_CBOR: u32 = 4;
+
 #[derive(Clone)]
 pub struct TcgEventLog {
     pub rec_num: u32,
