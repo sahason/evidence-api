@@ -107,7 +107,7 @@ impl TcgTpmsCelEvent {
         self.encoding.as_ref().map(|x| x.as_str())
     }
 
-    fn to_pcclient_format(&self) -> Option<TcgImrEvent> {
+    pub fn to_pcclient_format(&self) -> Option<TcgImrEvent> {
         match self.content_type {
             Some(TcgCelTypes::CEL_IMA_TEMPLATE) => {
                 // if let Some(event) = eve
@@ -148,7 +148,7 @@ impl TcgTpmsCelEvent {
     }
 
 
-    fn encode(&self, mut obj: TcgTpmsCelEvent, encoding: i32) -> TcgTpmsCelEvent {
+    pub fn encode(&self, mut obj: TcgTpmsCelEvent, encoding: i32) -> TcgTpmsCelEvent {
         match encoding {
             2 => {
                 obj.encoding = Some("TLV".to_string());
@@ -170,7 +170,7 @@ impl TcgTpmsCelEvent {
         }
     }
 
-    fn dump(&self) {
+    pub fn dump(&self) {
         let encoding = self.encoding();
         match encoding.as_deref() {
             Some("TLV") => {
