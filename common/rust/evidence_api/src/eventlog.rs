@@ -595,6 +595,7 @@ impl EventLogs {
                 }
                 EventLogEntry::TcgPcClientImrEvent(_) => (), // Skip TcgPcClientImrEvent during replay
                 EventLogEntry::TcgCanonicalEvent(_) => todo!(),
+                EventLogEntry::TcgTpmsCelEvent(_) => todo!(),
             }
         }
         Ok(replay_results)
