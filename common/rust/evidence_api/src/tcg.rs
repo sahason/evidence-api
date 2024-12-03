@@ -1,6 +1,8 @@
 use crate::binary_blob::dump_data;
+use crate::tcgcel::*;
 use hashbrown::HashMap;
 use log::info;
+use std::any::Any;
 
 pub const TPM_ALG_ERROR: u16 = 0x0;
 pub const TPM_ALG_RSA: u16 = 0x1;
@@ -377,9 +379,14 @@ pub enum EventLogEntry {
     TcgImrEvent(TcgImrEvent),
     TcgPcClientImrEvent(TcgPcClientImrEvent),
     TcgCanonicalEvent(TcgCanonicalEvent),
+    TcgTpmsCelEvent(TcgTpmsCelEvent),
 }
 
 impl EventLogEntry {
+    pub fn as_any(&self) -> &dyn Any {
+        self
+    }
+
     pub fn show(&self) {
         match self {
             EventLogEntry::TcgImrEvent(tcg_imr_event) => &tcg_imr_event.show(),
@@ -387,6 +394,7 @@ impl EventLogEntry {
                 &tcg_pc_client_imr_event.show()
             }
             EventLogEntry::TcgCanonicalEvent(_) => todo!(),
+            EventLogEntry::TcgTpmsCelEvent(_) => todo!(),
         };
     }
 }
