@@ -148,27 +148,27 @@ impl TcgTpmsCelEvent {
     }
 
 
-    // fn encode(obj: &mut Self, encoding: i32) -> Option<Self> {
-    //     match encoding {
-    //         2 => {
-    //             obj.encoding = Some("TLV".to_string());
-    //             Some(Self::encoded_in_tlv(obj))
-    //         }
-    //         3 => {
-    //             obj.encoding = Some("JSON".to_string());
-    //             Some(Self::encoded_in_json(obj))
-    //         }
-    //         4 => {
-    //             obj.encoding = Some("CBOR".to_string());
-    //             Some(Self::encoded_in_cbor(obj))
-    //         }
-    //         _ => {
-    //             error!("Invalid encoding specified. Returning the default encoding TLV");
-    //             obj.encoding = Some("TLV".to_string());
-    //             Some(Self::encoded_in_tlv(obj))
-    //         }
-    //     }
-    // }
+    fn encode(&self, mut obj: TcgTpmsCelEvent, encoding: i32) -> TcgTpmsCelEvent {
+        match encoding {
+            2 => {
+                obj.encoding = Some("TLV".to_string());
+                self.encoded_in_tlv(obj)
+            }
+            3 => {
+                obj.encoding = Some("JSON".to_string());
+                self.encoded_in_json(obj)
+            }
+            4 => {
+                obj.encoding = Some("CBOR".to_string());
+                self.encoded_in_cbor(obj)
+            }
+            _ => {
+                eprintln!("Invalid encoding specified. Returning the default encoding TLV");
+                obj.encoding = Some("TLV".to_string());
+                self.encoded_in_tlv(obj)
+            }
+        }
+    }
 
     fn dump(&self) {
         let encoding = self.encoding();
@@ -215,48 +215,59 @@ impl TcgTpmsCelEvent {
         }
     }
 
-    // fn encoded_in_tlv(mut obj: Obj) -> Obj {
-    //     let mut rec_num = TcgCelRecnum::new();
-    //     rec_num.set_type(TcgCelTypes::CEL_SEQNUM);
-    //     rec_num.set_value(obj.rec_num);
-    //     obj.set_rec_num(rec_num);
-    //     let mut digests = TcgCelDigests::new();
-    //     digests.set_type(TcgCelTypes::CEL_DIGESTS);
-    //     let mut d_list = Vec::new();
-    //     for digest in obj.digests.iter() {
-    //         let mut d = TcgTlv::new();
-    //         d.set_type(digest.alg.alg_id);
-    //         d.set_value(digest.hash.clone());
-    //         d_list.push(d);
-    //     }
-    //     digests.set_value(d_list);
-    //     obj.set_digests(digests);
-    //     let mut content = TcgCelContent::new();
-    //     content.set_type(obj._content_type);
-    //     content.set_value(obj.content.to_tlv());
-    //     obj.set_content(content);
-    //     let mut index = TcgCelImrNvindex::new();
-    //     if let Some(imr) = obj._imr {
-    //         index.set_type(TcgCelTypes::CEL_PCR);
-    //         index.set_value(imr);
-    //         obj.set_imr(index);
-    //     } else {
-    //         index.set_type(TcgCelTypes::CEL_NV_INDEX);
-    //         index.set_value(obj._nv_index);
-    //         obj.set_nv_index(index);
-    //     }
-    //     obj
-    // }
+    fn encoded_in_tlv(&self, mut obj: TcgTpmsCelEvent) -> TcgTpmsCelEvent {
+        // CEL Record encoded in TLV
+        let mut rec_num = TcgCelRecnum::new();
+        rec_num.set_type(TcgCelTypes::CEL_SEQNUM);
+        rec_num.set_value(obj.rec_num);
+        obj.set_rec_num(obj.rec_num);
 
-    // pub fn encoded_in_cbor(&self) -> Result<(), &'static str> {
-    //     // CEL record encoded in CBOR
-    //     Err("NotImplementedError")
-    // }
+        let mut digests = TcgCelDigests::new();
+        digests.set_type(Some(TcgCelTypes::CEL_DIGESTS));
+        let mut d_list = Vec::new();
+        for digest in obj.digests.iter() {
+            let d = TcgDigest {
+                algo_id: digest.algo_id,
+                hash: digest.hash.clone(),
+            };
+            // let mut d = TcgDigest::new();
+            // d.set_type(digest.algo_id);
+            // d.set_value(digest.hash.clone());
+            d_list.push(d);
+        }
+        // digests.set_value(d_list);
+        obj.set_digests(d_list);
 
-    // pub fn encoded_in_json(&self) -> Result<(), &'static str> {
-    //     // CEL record encoded in JSON
-    //     Err("NotImplementedError")
-    // }
+        // let mut content = TcgTpmuEventContent::new();
+        // content.set_type(obj.content_type.unwrap());
+        // content.set_value(obj.content.to_tlv());
+        // obj.set_content(content);
+
+        let mut index = TcgCelImrNvindex::new();
+        if let Some(imr) = obj.imr {
+            index.set_type(TcgCelTypes::CEL_PCR);
+            index.set_value(imr);
+            obj.set_imr(imr);
+        } else {
+            index.set_type(TcgCelTypes::CEL_NV_INDEX);
+            index.set_value(obj.nv_index.unwrap());
+            obj.set_nv_index(obj.nv_index.unwrap());
+        }
+
+        obj
+    }
+
+    pub fn encoded_in_cbor(&self, obj: TcgTpmsCelEvent) -> TcgTpmsCelEvent {
+        // CEL record encoded in CBOR
+        // Err("NotImplementedError");
+        obj
+    }
+
+    pub fn encoded_in_json(&self, obj: TcgTpmsCelEvent) -> TcgTpmsCelEvent {
+        // CEL record encoded in JSON
+        // Err("NotImplementedError");
+        obj
+    }
 }
 
 
