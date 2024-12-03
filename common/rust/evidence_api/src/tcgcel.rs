@@ -6,6 +6,7 @@ use log::error;
 use std::collections::HashMap;
 use std::any::Any;
 
+#[derive(Clone)]
 pub struct TcgTpmsCelEvent {
     rec_num: i32,
     digests: Vec<TcgDigest>,
@@ -111,34 +112,65 @@ impl TcgTpmsCelEvent {
         match self.content_type {
             Some(TcgCelTypes::CEL_IMA_TEMPLATE) => {
                 // if let Some(event) = eve
-                if let Some(template_content) = self.content.as_ref().unwrap().event_content.downcast_ref::<TcgTpmsEventImaTemplate>() {
-                    let event = &template_content.template_data().clone();
-                    Some(TcgImrEvent {
-                        imr_index: self.imr.unwrap() as u32,
-                        event_type: IMA_MEASUREMENT_EVENT,
-                        digests: self.digests.clone(),
-                        event_size: event.len() as u32,
-                        event: <String as Clone>::clone(&event).into_bytes(),
-                    })
+                match self.content.clone().unwrap() {
+                    TcgTpmuEventContent::TcgTpmsEventImaTemplate(template_content) => {
+                        let event = &template_content.template_data().clone();
+                        Some(TcgImrEvent {
+                            imr_index: self.imr.unwrap() as u32,
+                            event_type: IMA_MEASUREMENT_EVENT,
+                            digests: self.digests.clone(),
+                            event_size: event.len() as u32,
+                            event: <String as Clone>::clone(&event).into_bytes(),
+                        })
+                    }
+                    TcgTpmuEventContent::TcgTpmsEventPcClientStd(_) => None,
+                    TcgTpmuEventContent::TcgTpmsEventCelMgt(_) => None,
+                    TcgTpmuEventContent::TcgImaTlv(_) => None,
                 }
-                else {
-                    None
-                }
+                // if let Some(template_content) = self.content.unwrap().downcast_ref::<TcgTpmsEventImaTemplate>() {
+                //     let event = &template_content.template_data().clone();
+                //     Some(TcgImrEvent {
+                //         imr_index: self.imr.unwrap() as u32,
+                //         event_type: IMA_MEASUREMENT_EVENT,
+                //         digests: self.digests.clone(),
+                //         event_size: event.len() as u32,
+                //         event: <String as Clone>::clone(&event).into_bytes(),
+                //     })
+                // }
+                // else {
+                //     None
+                // }
             }
             Some(TcgCelTypes::CEL_PCCLIENT_STD) => {
-                if let Some(content) = self.content.as_ref().unwrap().event_content.downcast_ref::<TcgTpmsEventPcClientStd>() {
+                match self.content.clone().unwrap() {
+                    TcgTpmuEventContent::TcgTpmsEventPcClientStd(content) => {
+                        // let event = &template_content.template_data().clone();
+                        Some(TcgImrEvent {
+                            imr_index: self.imr.unwrap() as u32,
+                            event_type: content.event_type() as u32,
+                            digests: self.digests.clone(),
+                            event_size: content.event_data().len() as u32,
+                            event: content.event_data().to_vec(),
+                        })
+                    }
+                    TcgTpmuEventContent::TcgTpmsEventCelMgt(_) => None,
+                    TcgTpmuEventContent::TcgTpmsEventImaTemplate(_) => None,
+                    TcgTpmuEventContent::TcgImaTlv(_) => None,
+                }
+                
+            //     if let Some(content) = self.content.unwrap().downcast_ref::<TcgTpmsEventPcClientStd>() {
                     
-                    Some(TcgImrEvent {
-                        imr_index: self.imr.unwrap() as u32,
-                        event_type: content.event_type() as u32,
-                        digests: self.digests.clone(),
-                        event_size: content.event_data().len() as u32,
-                        event: content.event_data().to_vec(),
-                    })
-            }
-            else {
-                None
-            }
+            //         Some(TcgImrEvent {
+            //             imr_index: self.imr.unwrap() as u32,
+            //             event_type: content.event_type() as u32,
+            //             digests: self.digests.clone(),
+            //             event_size: content.event_data().len() as u32,
+            //             event: content.event_data().to_vec(),
+            //         })
+            // }
+            // else {
+            //     None
+            // }
          }
             _ => {
                 error!("Unsupported content to parse into TCG PCClient format.");
@@ -356,38 +388,76 @@ impl TcgTpmiCelContentType {
     }
 }
 
-pub struct TcgTpmuEventContent {
-    event_content: Box<dyn Any>,
+#[derive(Clone)]
+enum TcgTpmuEventContent {
+    TcgTpmsEventPcClientStd(TcgTpmsEventPcClientStd),
+    TcgTpmsEventCelMgt(TcgTpmsEventCelMgt),
+    TcgTpmsEventImaTemplate(TcgTpmsEventImaTemplate),
+    TcgImaTlv(TcgImaTlv),
 }
+
+// impl TcgTpmuEventContent {
+//     pub fn new(event_content: Box<dyn Any>) -> Result<Self, &'static str> {
+//         if !event_content.is::<TcgTpmsEventPcClientStd>()
+//             && !event_content.is::<TcgTpmsEventCelMgt>()
+//             && !event_content.is::<TcgTpmsEventImaTemplate>()
+//             && !event_content.is::<TcgImaTlv>()
+//         {
+//             return Err("Invalid event content used.");
+//         }
+//         Ok(Self { event_content })
+//     }
+
+//     pub fn content_type(&self) -> &str {
+//         if self.event_content.is::<TcgTpmsEventPcClientStd>() {
+//             "TcgTpmsEventPcClientStd"
+//         } else if self.event_content.is::<TcgTpmsEventCelMgt>() {
+//             "TcgTpmsEventCelMgt"
+//         } else if self.event_content.is::<TcgTpmsEventImaTemplate>() {
+//             "TcgTpmsEventImaTemplate"
+//         } else if self.event_content.is::<TcgImaTlv>() {
+//             "TcgImaTlv"
+//         } else {
+//             "Unknown"
+//         }
+//     }
+
+//     pub fn event(&self) -> &Box<dyn Any> {
+//         &self.event_content
+//     }
+// }
 
 impl TcgTpmuEventContent {
     pub fn new(event_content: Box<dyn Any>) -> Result<Self, &'static str> {
-        if !event_content.is::<TcgTpmsEventPcClientStd>()
-            && !event_content.is::<TcgTpmsEventCelMgt>()
-            && !event_content.is::<TcgTpmsEventImaTemplate>()
-            && !event_content.is::<TcgImaTlv>()
-        {
-            return Err("Invalid event content used.");
+        if let Some(event) = event_content.downcast_ref::<TcgTpmsEventPcClientStd>() {
+            Ok(TcgTpmuEventContent::TcgTpmsEventPcClientStd(event.clone()))
+        } else if let Some(event) = event_content.downcast_ref::<TcgTpmsEventCelMgt>() {
+            Ok(TcgTpmuEventContent::TcgTpmsEventCelMgt(event.clone()))
+        } else if let Some(event) = event_content.downcast_ref::<TcgTpmsEventImaTemplate>() {
+            Ok(TcgTpmuEventContent::TcgTpmsEventImaTemplate(event.clone()))
+        } else if let Some(event) = event_content.downcast_ref::<TcgImaTlv>() {
+            Ok(TcgTpmuEventContent::TcgImaTlv(event.clone()))
+        } else {
+            Err("Invalid event content used.")
         }
-        Ok(Self { event_content })
     }
 
     pub fn content_type(&self) -> &str {
-        if self.event_content.is::<TcgTpmsEventPcClientStd>() {
-            "TcgTpmsEventPcClientStd"
-        } else if self.event_content.is::<TcgTpmsEventCelMgt>() {
-            "TcgTpmsEventCelMgt"
-        } else if self.event_content.is::<TcgTpmsEventImaTemplate>() {
-            "TcgTpmsEventImaTemplate"
-        } else if self.event_content.is::<TcgImaTlv>() {
-            "TcgImaTlv"
-        } else {
-            "Unknown"
+        match self {
+            TcgTpmuEventContent::TcgTpmsEventPcClientStd(_) => "TcgTpmsEventPcClientStd",
+            TcgTpmuEventContent::TcgTpmsEventCelMgt(_) => "TcgTpmsEventCelMgt",
+            TcgTpmuEventContent::TcgTpmsEventImaTemplate(_) => "TcgTpmsEventImaTemplate",
+            TcgTpmuEventContent::TcgImaTlv(_) => "TcgImaTlv",
         }
     }
 
-    pub fn event(&self) -> &Box<dyn Any> {
-        &self.event_content
+    pub fn event(&self) -> &dyn Any {
+        match self {
+            TcgTpmuEventContent::TcgTpmsEventPcClientStd(event) => event,
+            TcgTpmuEventContent::TcgTpmsEventCelMgt(event) => event,
+            TcgTpmuEventContent::TcgTpmsEventImaTemplate(event) => event,
+            TcgTpmuEventContent::TcgImaTlv(event) => event,
+        }
     }
 }
 
@@ -600,6 +670,7 @@ impl TcgTlv for TcgCelContent {
     }
 }
 
+#[derive(Clone)]
 pub struct TcgTpmuCelMgt {
     cel_version: i32,
     firmware_end: Option<i32>,
@@ -659,6 +730,7 @@ impl TcgTpmuCelMgt {
     }
 }
 
+#[derive(Clone)]
 pub struct TcgTpmsEventCelMgt {
     mgt_type: i32,
     mgt_data: TcgTpmuCelMgt,
@@ -688,6 +760,7 @@ impl TcgTpmsEventCelMgt {
     }
 }
 
+#[derive(Clone)]
 pub struct TcgTpmsEventPcClientStd {
     event_type: i32,
     event_data: Vec<u8>,
@@ -731,6 +804,7 @@ impl TcgTpmsEventPcClientStd {
     }
 }
 
+#[derive(Clone)]
 pub struct TcgTpmsEventImaTemplate {
     template_data: String,
     template_name: String,
@@ -780,6 +854,7 @@ impl TcgTpmsEventImaTemplate {
     }
 }
 
+#[derive(Clone)]
 pub struct TcgImaTlv;
 
 impl TcgImaTlv {
